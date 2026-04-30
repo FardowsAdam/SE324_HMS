@@ -1,6 +1,7 @@
 package ui;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import repository.UserRepository;
 import model.User;
@@ -14,27 +15,65 @@ public class LoginFrame extends JFrame {
     public LoginFrame() {
         userRepo = new UserRepository();
         
-        setTitle("Hospital Management System - Login");
-        setSize(400, 250);
+        // Window Setup
+        setTitle("HMS | Secure Login");
+        setSize(650, 450);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null); // Centers the window
-        setLayout(new GridLayout(3, 2, 10, 10));
+        setLocationRelativeTo(null);
+        getContentPane().setBackground(new Color(245, 247, 250)); // Light Gray Background
 
-        // UI Components
-        add(new JLabel(" Username:"));
+        // Main Container with Padding
+        JPanel mainPanel = new JPanel(new BorderLayout(20, 20));
+        mainPanel.setBorder(new EmptyBorder(30, 40, 30, 40));
+        mainPanel.setBackground(Color.WHITE);
+
+        // --- HEADER SECTION ---
+        JLabel lblTitle = new JLabel("Hospital System", SwingConstants.CENTER);
+        lblTitle.setFont(new Font("SansSerif", Font.BOLD, 22));
+        lblTitle.setForeground(new Color(44, 62, 80)); // Dark Navy
+        
+        JLabel lblSubTitle = new JLabel("Please enter your credentials", SwingConstants.CENTER);
+        lblSubTitle.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        lblSubTitle.setForeground(Color.GRAY);
+
+        JPanel headerPanel = new JPanel(new GridLayout(2, 1));
+        headerPanel.setBackground(Color.WHITE);
+        headerPanel.add(lblTitle);
+        headerPanel.add(lblSubTitle);
+        mainPanel.add(headerPanel, BorderLayout.NORTH);
+
+        // --- INPUT SECTION ---
+        JPanel inputPanel = new JPanel(new GridLayout(4, 1, 5, 5));
+        inputPanel.setBackground(Color.WHITE);
+
         userField = new JTextField();
-        add(userField);
-
-        add(new JLabel(" Password:"));
         passField = new JPasswordField();
-        add(passField);
+        
+        // Styling inputs
+        userField.setBorder(BorderFactory.createTitledBorder("Username"));
+        passField.setBorder(BorderFactory.createTitledBorder("Password"));
 
-        loginButton = new JButton("Login");
-        add(new JLabel("")); // Empty space for alignment
-        add(loginButton);
+        inputPanel.add(userField);
+        inputPanel.add(passField);
+        mainPanel.add(inputPanel, BorderLayout.CENTER);
+
+        // --- BUTTON SECTION ---
+        loginButton = new JButton("LOGIN");
+        loginButton.setBackground(new Color(41, 128, 185)); // Professional Blue
+        loginButton.setForeground(Color.WHITE);
+        loginButton.setFont(new Font("SansSerif", Font.BOLD, 14));
+        loginButton.setFocusPainted(false);
+        loginButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        mainPanel.add(loginButton, BorderLayout.SOUTH);
+
+        add(mainPanel);
 
         // Action Logic
         loginButton.addActionListener(e -> handleLogin());
+        
+        // Press Enter to Login
+        getRootPane().setDefaultButton(loginButton);
     }
 
     private void handleLogin() {
@@ -44,11 +83,16 @@ public class LoginFrame extends JFrame {
         User user = userRepo.login(username, password);
         
         if (user != null) {
-            JOptionPane.showMessageDialog(this, "Welcome " + user.getUsername());
-            user.login(); // Logs to console for now
-            // Future: Open the correct dashboard here
+            DashboardFrame dashboard;
+            if (user instanceof model.Admin) {
+                dashboard = new AdminDashboard(user);
+            } else {
+                dashboard = new DashboardFrame(user); 
+            }
+            dashboard.setVisible(true);
+            this.dispose();
         } else {
-            JOptionPane.showMessageDialog(this, "Invalid Credentials", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Invalid Username or Password", "Login Failed", JOptionPane.ERROR_MESSAGE);
         }
     }
 }
