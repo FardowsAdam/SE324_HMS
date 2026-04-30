@@ -81,18 +81,26 @@ public class LoginFrame extends JFrame {
         String password = new String(passField.getPassword());
         
         User user = userRepo.login(username, password);
-        
+
         if (user != null) {
-            DashboardFrame dashboard;
-            if (user instanceof model.Admin) {
-                dashboard = new AdminDashboard(user);
-            } else {
-                dashboard = new DashboardFrame(user); 
-            }
-            dashboard.setVisible(true);
-            this.dispose();
+        DashboardFrame dashboard;
+
+        if (user instanceof model.Admin) {
+            dashboard = new AdminDashboard(user);
+        } else if (user instanceof model.Receptionist) {
+            dashboard = new ReceptionistDashboard(user);
+        } else if (user instanceof model.Doctor) {
+            // We'll create DoctorDashboard soon
+            dashboard = new DashboardFrame(user); 
         } else {
-            JOptionPane.showMessageDialog(this, "Invalid Username or Password", "Login Failed", JOptionPane.ERROR_MESSAGE);
+            dashboard = new DashboardFrame(user); 
         }
+
+        dashboard.setVisible(true);
+        this.dispose();
+    } else {
+        JOptionPane.showMessageDialog(this, "Invalid Username or Password", "Login Failed", JOptionPane.ERROR_MESSAGE);
+    }
+        
     }
 }
