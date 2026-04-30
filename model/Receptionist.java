@@ -1,4 +1,4 @@
-
+package model;
 /**
  * This is a Child Class.
  * Receptionists handle patient intake and appointment management.

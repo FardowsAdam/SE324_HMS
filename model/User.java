@@ -1,5 +1,4 @@
 package model;
-
 /**
  * This is the Base Class (Parent).
  * It contains the attributes that every person in the hospital needs.

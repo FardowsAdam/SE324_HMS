@@ -1,3 +1,4 @@
+package model;
 
 /**
  * This is a Child Class.
