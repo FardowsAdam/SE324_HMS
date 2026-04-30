@@ -90,9 +90,9 @@ public class LoginFrame extends JFrame {
         } else if (user instanceof model.Receptionist) {
             dashboard = new ReceptionistDashboard(user);
         } else if (user instanceof model.Doctor) {
-            // We'll create DoctorDashboard soon
-            dashboard = new DashboardFrame(user); 
-        } else {
+            dashboard = new DoctorDashboard((model.Doctor) user); 
+        }
+    else {
             dashboard = new DashboardFrame(user); 
         }
 
