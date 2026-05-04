@@ -3,7 +3,7 @@ package ui;
 import javax.swing.*;
 import javax.swing.table.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.TitledBorder;
+//import javax.swing.border.TitledBorder;
 import java.awt.*;
 import model.User;
 import java.util.List;

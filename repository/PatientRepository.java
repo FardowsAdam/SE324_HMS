@@ -10,7 +10,16 @@ public class PatientRepository {
     /**
      * Registers a new patient in the database.
      */
+/**
+     * Registers a new patient in the database.
+     */
     public boolean registerPatient(String name, int age, String gender, String phone, String address) {
+        // VALIDATION: Reject empty or null names to satisfy the test case
+        if (name == null || name.trim().isEmpty()) {
+            System.out.println("Registration failed: Patient name cannot be empty.");
+            return false; 
+        }
+
         String sql = "INSERT INTO patients (full_name, age, gender, phone, address) VALUES (?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
