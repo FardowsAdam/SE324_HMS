@@ -3,6 +3,9 @@ package repository;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.swing.JOptionPane;
+
 import util.DatabaseConnection;
 
 public class PatientRepository {
@@ -68,53 +71,95 @@ public class PatientRepository {
         return patients;
     }
 
-    public boolean bookAppointment(int patientId, int doctorId, String date, String time, String symptoms) {
-        String sql = "INSERT INTO appointments (patient_id, doctor_id, appointment_date, appointment_time, symptoms) VALUES (?, ?, ?, ?, ?)";
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
+
+
+    // Update this method in PatientRepository.java
+// Update this method in PatientRepository.java
+public boolean bookAppointment(int patientId, int doctorId, String date, String time, String symptoms) {
+    // Format time to ensure it has proper MySQL TIME format (HH:MM:SS)
+    String formattedTime = time;
+    if (time != null && !time.isEmpty()) {
+        // If time doesn't have seconds, add :00
+        if (time.length() == 5 && time.contains(":")) {
+            formattedTime = time + ":00";
+        } else if (time.length() == 4 && time.contains(":")) {
+            // Handle "9:30" format
+            String[] parts = time.split(":");
+            formattedTime = String.format("%02d:%s:00", Integer.parseInt(parts[0]), parts[1]);
+        }
+    }
+    
+    System.out.println("DEBUG: Booking - Original time: " + time + ", Formatted time: " + formattedTime);
+    
+    // First check if slot is already booked
+    String checkSql = "SELECT COUNT(*) FROM appointments WHERE doctor_id = ? AND appointment_date = ? AND appointment_time = ? AND status != 'Cancelled'";
+    
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+        
+        checkStmt.setInt(1, doctorId);
+        checkStmt.setString(2, date);
+        checkStmt.setString(3, formattedTime);
+        ResultSet rs = checkStmt.executeQuery();
+        rs.next();
+        
+        if (rs.getInt(1) > 0) {
+            JOptionPane.showMessageDialog(null, "This time slot is already booked!");
+            return false;
+        }
+        
+        // If slot is free, book it
+        String insertSql = "INSERT INTO appointments (patient_id, doctor_id, appointment_date, appointment_time, symptoms, status) VALUES (?, ?, ?, ?, ?, 'Scheduled')";
+        try (PreparedStatement pstmt = conn.prepareStatement(insertSql)) {
             pstmt.setInt(1, patientId);
             pstmt.setInt(2, doctorId);
             pstmt.setString(3, date);
-            pstmt.setString(4, time);
+            pstmt.setString(4, formattedTime);
             pstmt.setString(5, symptoms);
             
-            return pstmt.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            int result = pstmt.executeUpdate();
+            System.out.println("DEBUG: Insert result: " + result + " row(s) affected");
+            return result > 0;
         }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        return false;
     }
+}
+
+
+
 
     /**
      * Fetches all appointments with Patient and Doctor names for the Manager Table.
      */
-    public List<Object[]> getAllAppointments() {
-        List<Object[]> list = new ArrayList<>();
-        // Change u.full_name to u.username or u.name based on your database schema
-        String sql = "SELECT a.appointment_id, p.full_name, u.username, a.appointment_date, " +
-                    "a.appointment_time, a.status FROM appointments a " +
-                    "JOIN patients p ON a.patient_id = p.patient_id " +
-                    "JOIN users u ON a.doctor_id = u.user_id " +
-                    "ORDER BY a.appointment_date DESC";
-        try (Connection conn = DatabaseConnection.getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            ResultSet rs = pstmt.executeQuery()) {
-            while (rs.next()) {
-                list.add(new Object[]{
-                    rs.getInt(1),       // appointment_id
-                    rs.getString(2),    // Patient Name
-                    rs.getString(3),    // Doctor Username
-                    rs.getString(4),    // Date
-                    rs.getString(5),    // Time
-                    rs.getString(6)     // Status
-                });
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
+public List<Object[]> getAllAppointments() {
+    List<Object[]> list = new ArrayList<>();
+    String sql = "SELECT a.appointment_id, p.full_name, u.username, a.appointment_date, " +
+                "a.appointment_time, a.status FROM appointments a " +
+                "JOIN patients p ON a.patient_id = p.patient_id " +
+                "JOIN users u ON a.doctor_id = u.user_id " +
+                "WHERE a.status != 'Cancelled' " +  // Exclude cancelled appointments
+                "ORDER BY a.appointment_date DESC";
+    
+    try (Connection conn = DatabaseConnection.getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(sql);
+         ResultSet rs = pstmt.executeQuery()) {
+        while (rs.next()) {
+            list.add(new Object[]{
+                rs.getInt(1),       // appointment_id
+                rs.getString(2),    // Patient Name
+                rs.getString(3),    // Doctor Username
+                rs.getString(4),    // Date
+                rs.getString(5),    // Time
+                rs.getString(6)     // Status
+            });
         }
-        return list;
+    } catch (SQLException e) {
+        e.printStackTrace();
     }
+    return list;
+}
 
     public boolean updatePatient(int id, String name, int age, String phone, String address) {
         String sql = "UPDATE patients SET full_name=?, age=?, phone=?, address=? WHERE patient_id=?";
@@ -176,17 +221,16 @@ public class PatientRepository {
     }
 
 
-
 public List<Object[]> getAllBills() {
     List<Object[]> bills = new ArrayList<>();
-    // Now selecting the actual created_at column
-    String sql = "SELECT b.bill_id, p.full_name, b.total_amount, b.created_at " +
+    String sql = "SELECT b.bill_id, p.full_name, b.total_amount, b.created_at, a.status " +
                  "FROM bills b " +
                  "JOIN appointments a ON b.appointment_id = a.appointment_id " +
                  "JOIN patients p ON a.patient_id = p.patient_id " +
+                 "WHERE b.payment_status = 'Pending' OR b.payment_status = 'Paid' " +
                  "ORDER BY b.created_at DESC";
     
-    try (Connection conn = util.DatabaseConnection.getConnection();
+    try (Connection conn = DatabaseConnection.getConnection();
          PreparedStatement pstmt = conn.prepareStatement(sql);
          ResultSet rs = pstmt.executeQuery()) {
         while (rs.next()) {
@@ -194,7 +238,7 @@ public List<Object[]> getAllBills() {
                 rs.getInt("bill_id"),
                 rs.getString("full_name"),
                 "$" + rs.getDouble("total_amount"),
-                rs.getTimestamp("created_at").toString() // Real data instead of "N/A"
+                rs.getTimestamp("created_at").toString()
             });
         }
     } catch (SQLException e) { 

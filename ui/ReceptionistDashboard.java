@@ -6,6 +6,7 @@ import javax.swing.border.EmptyBorder;
 //import javax.swing.border.TitledBorder;
 import java.awt.*;
 import model.User;
+import repository.DoctorRepository;
 import java.util.List;
 
 public class ReceptionistDashboard extends DashboardFrame {
@@ -132,6 +133,131 @@ public class ReceptionistDashboard extends DashboardFrame {
     }
 
 
+    
+
+
+
+private void showAppointmentBooking(String pId, String pName) {
+    content.removeAll();
+    JPanel main = new JPanel(new GridBagLayout());
+    main.setBackground(BG_COLOR);
+
+    JPanel card = new JPanel(new GridLayout(0, 1, 0, 15));
+    card.setBackground(Color.WHITE);
+    card.setBorder(new EmptyBorder(30, 40, 30, 40));
+    card.setPreferredSize(new Dimension(600, 750));
+
+    JLabel title = new JLabel("Booking for: " + pName, SwingConstants.CENTER);
+    title.setFont(new Font("SansSerif", Font.BOLD, 16));
+    
+    DefaultListModel<String> docModel = new DefaultListModel<>();
+    List<String[]> doctors = new repository.UserRepository().getAllStaffFullProfiles();
+    for (String[] data : doctors) {
+        if (data[2].equalsIgnoreCase("Doctor")) {
+            docModel.addElement(data[0] + " - Dr. " + data[3]);
+        }
+    }
+    
+    JList<String> docList = new JList<>(docModel);
+    docList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+    
+    // Create date combo box with next 30 days
+    JComboBox<String> dateCombo = new JComboBox<>();
+    java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd");
+    java.util.Calendar cal = java.util.Calendar.getInstance();
+    
+    // Add dates for next 30 days
+    for (int i = 0; i < 30; i++) {
+        dateCombo.addItem(sdf.format(cal.getTime()));
+        cal.add(java.util.Calendar.DAY_OF_MONTH, 1);
+    }
+    
+    // Time combo will be populated based on doctor and date
+    JComboBox<String> timeCombo = new JComboBox<>();
+    timeCombo.setEnabled(false);
+    
+    JTextArea symptomArea = new JTextArea(3, 20);
+    symptomArea.setBorder(BorderFactory.createTitledBorder("Symptoms"));
+    
+    JButton btnConfirm = new JButton("CONFIRM APPOINTMENT");
+    btnConfirm.setBackground(ACCENT_COLOR);
+    btnConfirm.setForeground(Color.WHITE);
+
+    // Load available time slots when doctor changes
+    docList.addListSelectionListener(e -> {
+        if (!docList.isSelectionEmpty() && dateCombo.getSelectedItem() != null) {
+            loadAvailableTimeSlots(docList.getSelectedValue(), (String) dateCombo.getSelectedItem(), timeCombo);
+        }
+    });
+    
+    // Load available time slots when date changes
+    dateCombo.addActionListener(e -> {
+        if (!docList.isSelectionEmpty() && dateCombo.getSelectedItem() != null) {
+            loadAvailableTimeSlots(docList.getSelectedValue(), (String) dateCombo.getSelectedItem(), timeCombo);
+        }
+    });
+
+    card.add(title);
+    card.add(new JLabel("Select Doctor:"));
+    card.add(new JScrollPane(docList));
+    card.add(new JLabel("Select Date:"));
+    card.add(dateCombo);
+    card.add(new JLabel("Available Time Slots:"));
+    card.add(timeCombo);
+    card.add(new JScrollPane(symptomArea));
+    card.add(btnConfirm);
+
+    btnConfirm.addActionListener(e -> {
+        if (docList.getSelectedIndex() != -1 && timeCombo.getSelectedItem() != null && timeCombo.isEnabled()) {
+            int docId = Integer.parseInt(docList.getSelectedValue().split(" - ")[0]);
+            String selectedTime = (String) timeCombo.getSelectedItem();
+            String selectedDate = (String) dateCombo.getSelectedItem();
+            
+            // Don't proceed if "No available slots" is selected
+            if (selectedTime.equals("No available slots")) {
+                JOptionPane.showMessageDialog(this, "No available time slots for selected doctor and date.");
+                return;
+            }
+            
+            if (patientRepo.bookAppointment(Integer.parseInt(pId), docId, selectedDate, selectedTime, symptomArea.getText())) {
+                JOptionPane.showMessageDialog(this, "Appointment Booked Successfully!");
+                showAppointmentManager();
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to book appointment. Please try again.");
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Please select doctor, date, and time slot.");
+        }
+    });
+
+    main.add(card);
+    content.add(main, BorderLayout.CENTER);
+    refreshUI();
+}
+
+private void loadAvailableTimeSlots(String doctorSelection, String date, JComboBox<String> timeCombo) {
+    if (doctorSelection == null || date == null) return;
+    
+    int docId = Integer.parseInt(doctorSelection.split(" - ")[0]);
+    DoctorRepository dr = new DoctorRepository();
+    List<String> slots = dr.getAvailableTimeSlots(docId, date);
+    
+    timeCombo.removeAllItems();
+    if (slots.isEmpty()) {
+        timeCombo.addItem("No available slots");
+        timeCombo.setEnabled(false);
+    } else {
+        for (String slot : slots) {
+            timeCombo.addItem(slot);
+        }
+        timeCombo.setEnabled(true);
+    }
+}
+
+
+
+
+
     private void showPatientSearch() {
     content.removeAll();
     JPanel main = new JPanel(new BorderLayout(20, 20));
@@ -206,56 +332,7 @@ public class ReceptionistDashboard extends DashboardFrame {
     refreshUI();
 }
 
-    private void showAppointmentBooking(String pId, String pName) {
-        content.removeAll();
-        JPanel main = new JPanel(new GridBagLayout());
-        main.setBackground(BG_COLOR);
 
-        JPanel card = new JPanel(new GridLayout(0, 1, 0, 15));
-        card.setBackground(Color.WHITE);
-        card.setBorder(new EmptyBorder(30, 40, 30, 40));
-        card.setPreferredSize(new Dimension(550, 650));
-
-        JLabel title = new JLabel("Booking for: " + pName, SwingConstants.CENTER);
-        DefaultListModel<String> docModel = new DefaultListModel<>();
-        new repository.UserRepository().getAllStaffFullProfiles().stream()
-            .filter(data -> data[2].toString().equalsIgnoreCase("Doctor"))
-            .forEach(data -> docModel.addElement(data[0] + " - Dr. " + data[3]));
-        
-        JList<String> docList = new JList<>(docModel);
-        JTextField dateField = new JTextField("2026-05-01");
-        JTextField timeField = new JTextField("10:00");
-        JTextArea symptomArea = new JTextArea(3, 20);
-        symptomArea.setBorder(BorderFactory.createTitledBorder("Symptoms"));
-
-        styleEditField(dateField, "Date (YYYY-MM-DD)");
-        styleEditField(timeField, "Time (HH:MM)");
-
-        JButton btnConfirm = new JButton("CONFIRM APPOINTMENT");
-        btnConfirm.setBackground(ACCENT_COLOR);
-        btnConfirm.setForeground(Color.WHITE);
-
-        card.add(title);
-        card.add(new JScrollPane(docList));
-        card.add(dateField);
-        card.add(timeField);
-        card.add(new JScrollPane(symptomArea));
-        card.add(btnConfirm);
-
-        btnConfirm.addActionListener(e -> {
-            if (docList.getSelectedIndex() != -1) {
-                int docId = Integer.parseInt(docList.getSelectedValue().split(" - ")[0]);
-                if (patientRepo.bookAppointment(Integer.parseInt(pId), docId, dateField.getText(), timeField.getText(), symptomArea.getText())) {
-                    JOptionPane.showMessageDialog(this, "Success!");
-                    showAppointmentManager();
-                }
-            }
-        });
-
-        main.add(card);
-        content.add(main, BorderLayout.CENTER);
-        refreshUI();
-    }
 
     private void showAppointmentManager() {
         content.removeAll();

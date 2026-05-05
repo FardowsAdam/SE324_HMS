@@ -1,4 +1,5 @@
 package services;
+
 import java.sql.*;
 import java.util.Map;
 import repository.UserRepository;
@@ -27,22 +28,22 @@ public class AdminService {
                 double sal = Double.parseDouble(details.get("salary"));
                 
                 if (role.equals("Doctor")) {
-                    String sql = "INSERT INTO doctors (doctor_id, full_name, specialty, phone, salary) VALUES (?,?,?,?,?)";
+                    // Corrected: 4 placeholders for 4 values
+                    String sql = "INSERT INTO doctors (doctor_id, full_name, specialty, salary) VALUES (?,?,?,?)";
                     PreparedStatement ps2 = conn.prepareStatement(sql);
                     ps2.setInt(1, id);
                     ps2.setString(2, details.get("name"));
                     ps2.setString(3, details.get("specialty"));
-                    ps2.setString(4, details.get("phone"));
-                    ps2.setDouble(5, sal);
+                    ps2.setDouble(4, sal);  // Changed from index 5 to 4
                     ps2.executeUpdate();
                 } else {
-                    String sql = "INSERT INTO receptionists (receptionist_id, full_name, phone, shift_type, salary) VALUES (?,?,?,?,?)";
+                    // Receptionist - removed phone column
+                    String sql = "INSERT INTO receptionists (receptionist_id, full_name, shift_type, salary) VALUES (?,?,?,?)";
                     PreparedStatement ps2 = conn.prepareStatement(sql);
                     ps2.setInt(1, id);
                     ps2.setString(2, details.get("name"));
-                    ps2.setString(3, details.get("phone"));
-                    ps2.setString(4, details.get("shift"));
-                    ps2.setDouble(5, sal);
+                    ps2.setString(3, details.get("shift"));  // shift_type at position 3
+                    ps2.setDouble(4, sal);  // salary at position 4
                     ps2.executeUpdate();
                 }
             }
@@ -61,6 +62,9 @@ public class AdminService {
             return role.equals("Doctor") ? 
                    repo.updateDoctorProfile(id, name, sal, extra) : 
                    repo.updateReceptionistProfile(id, name, sal, extra);
-        } catch (Exception e) { return false; }
+        } catch (Exception e) { 
+            e.printStackTrace();
+            return false; 
+        }
     }
 }

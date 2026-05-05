@@ -46,13 +46,17 @@ public class UserRepository {
 
 
 
-        public boolean deleteUser(String id) {
+        // Add this method to UserRepository.java if missing
+    public boolean deleteUser(String userId) {
         String sql = "DELETE FROM users WHERE user_id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, Integer.parseInt(id));
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, Integer.parseInt(userId));
             return pstmt.executeUpdate() > 0;
-        } catch (SQLException e) { e.printStackTrace(); return false; }
+        } catch (SQLException e) { 
+            e.printStackTrace(); 
+            return false; 
+        }
     }
 
 
