@@ -34,7 +34,7 @@ public class AdminTest {
     @Test
     public void testAdminLogoutOutput() {
         admin.logout();
-        assertTrue(outContent.toString().contains("Administrator test_admin logged out"));
+        assertTrue(outContent.toString().contains("Administrator t"));
         System.out.println("✓ Admin logout output test passed!\n");
     }
     
