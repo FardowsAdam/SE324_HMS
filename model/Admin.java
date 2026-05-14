@@ -12,7 +12,7 @@ public class Admin extends User {
 
     @Override
     public void login() {
-        System.out.println("Administrator " + username + " logged in.");
+        System.out.println("Administrator " + username + " logged in With success.");
     }
 
     @Override
