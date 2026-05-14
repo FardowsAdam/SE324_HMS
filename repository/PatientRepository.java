@@ -91,7 +91,7 @@ public boolean bookAppointment(int patientId, int doctorId, String date, String 
     
     System.out.println("DEBUG: Booking - Original time: " + time + ", Formatted time: " + formattedTime);
     
-    // First check if slot is already booked
+    // First check if slot is already booked //////
     String checkSql = "SELECT COUNT(*) FROM appointments WHERE doctor_id = ? AND appointment_date = ? AND appointment_time = ? AND status != 'Cancelled'";
     
     try (Connection conn = DatabaseConnection.getConnection();
@@ -208,7 +208,7 @@ public List<Object[]> getAllAppointments() {
             conn.commit(); // Save changes
             return true;
         } catch (SQLException e) {
-            if (conn != null) {
+            if (conn != null) { ///////////////
                 try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
             }
             e.printStackTrace();
